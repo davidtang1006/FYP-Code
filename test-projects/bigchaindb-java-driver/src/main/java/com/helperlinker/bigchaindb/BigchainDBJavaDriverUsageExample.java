@@ -45,7 +45,8 @@ public class BigchainDBJavaDriverUsageExample {
 		System.out.println(Base58.encode(keys.getPublic().getEncoded()));
 		System.out.println(Base58.encode(keys.getPrivate().getEncoded()));
 
-		// Create New asset
+		// Create new asset
+		@SuppressWarnings("serial")
 		Map<String, String> assetData = new TreeMap<String, String>() {
 			{
 				put("Name", "James Bond");
@@ -106,7 +107,6 @@ public class BigchainDBJavaDriverUsageExample {
 				onFailure();
 			}
 		};
-
 		return callback;
 	}
 
@@ -119,7 +119,7 @@ public class BigchainDBJavaDriverUsageExample {
 	}
 
 	/**
-	 * Generates EdDSA keypair to sign and verify transactions
+	 * Generates EdDSA key pair to sign and verify transactions
 	 * 
 	 * @return KeyPair
 	 */
@@ -151,12 +151,9 @@ public class BigchainDBJavaDriverUsageExample {
 
 			System.out.println("(*) CREATE Transaction sent - " + transaction.getId());
 			return transaction.getId();
-
 		} catch (IOException e) {
-			// TODO: Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		return null;
 	}
 
@@ -170,7 +167,6 @@ public class BigchainDBJavaDriverUsageExample {
 	public void doTransfer(String txId, MetaData metaData, KeyPair keys) throws Exception {
 		Map<String, String> assetData = new TreeMap<String, String>();
 		assetData.put("id", txId);
-
 		try {
 			// Which transaction you want to fulfill?
 			FulFill fulfill = new FulFill();
@@ -187,7 +183,6 @@ public class BigchainDBJavaDriverUsageExample {
 
 			System.out.println("(*) TRANSFER Transaction sent - " + transaction.getId());
 		} catch (IOException e) {
-			// TODO: Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
