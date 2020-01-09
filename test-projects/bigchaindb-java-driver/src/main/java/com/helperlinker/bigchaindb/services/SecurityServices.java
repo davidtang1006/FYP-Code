@@ -1,25 +1,34 @@
 package com.helperlinker.bigchaindb.services;
 
 import com.bigchaindb.util.Base58;
-import com.helperlinker.bigchaindb.services.DeterministicKeyPairGenerator;
 
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Random;
+import java.security.SecureRandom;
 
+import net.i2p.crypto.eddsa.KeyPairGenerator;
+
+/**
+ * Provide methods to calculate hashes and generate key pairs from passwords and
+ * hashes, etc.
+ */
 public class SecurityServices {
+	private static final int DEFAULT_KEYSIZE = 256;
+
 	public static KeyPair generateKeyPairFromPwdAndSalt(String pwd, String salt) {
-		// Prepare a seed. Extract a string with length of 16.
-		String substring = calculateHash(pwd, salt, "SHA-512").substring(0, 16);
-		long seed = Long.parseUnsignedLong(substring, 16); // parseLong does not parse strings as negative values
+		// Prepare a seed. A hash function other than the one used to calculate hashed
+		// password should be used. Otherwise, the key pairs generated will be
+		// predictable.
+		String hashString = calculateHash(pwd, salt, "SHA-512");
+		byte[] seed = hexStringToByteArray(hashString);
 
-		Random random = new Random(seed);
+		SecureRandom random = new SecureRandom(seed);
 
-		// Prepare the keys
-		DeterministicKeyPairGenerator edDsaKpg = new DeterministicKeyPairGenerator();
-		edDsaKpg.initialize(DeterministicKeyPairGenerator.DEFAULT_KEYSIZE, random);
+		// Prepare keys
+		KeyPairGenerator edDsaKpg = new KeyPairGenerator();
+		edDsaKpg.initialize(DEFAULT_KEYSIZE, random);
 		KeyPair keyPair = edDsaKpg.generateKeyPair();
 
 		System.out.println("(*) Keys Generated"); // TODO: Specify whose keys are generated

@@ -7,6 +7,9 @@ import java.util.Map;
 import com.helperlinker.bigchaindb.services.BigchainDBServices;
 import com.helperlinker.bigchaindb.services.SecurityServices;
 
+/**
+ * A model for helpers
+ */
 public class Helper {
 	/**
 	 * ID card number, {hashed password, salt, key pair}

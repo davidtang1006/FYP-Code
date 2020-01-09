@@ -3,6 +3,9 @@ package com.helperlinker.bigchaindb.users;
 import java.util.Map;
 import java.util.HashMap;
 
+/**
+ * A model for employers
+ */
 public class Employer {
 	private static Map<String, String[]> map = new HashMap<String, String[]>();
 

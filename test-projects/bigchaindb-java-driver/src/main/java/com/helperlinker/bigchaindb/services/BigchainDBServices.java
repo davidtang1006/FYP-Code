@@ -17,6 +17,10 @@ import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import okhttp3.Response;
 
+/**
+ * Provide services to record transactions to BigchainDB. Source: <a href=
+ * "https://github.com/bigchaindb/java-bigchaindb-driver#usage">https://github.com/bigchaindb/java-bigchaindb-driver#usage</a>.
+ */
 public class BigchainDBServices {
 	public static void createHelperAccount(String idCardNum) {
 		setConfig();
@@ -50,7 +54,7 @@ public class BigchainDBServices {
 	}
 
 	/**
-	 * Configure connection URL and credentials.
+	 * Configure connection URL and credentials
 	 */
 	private static void setConfig() {
 		BigchainDbConfigBuilder.baseUrl("http://localhost:9984/") // Or, use http://testnet.bigchaindb.com

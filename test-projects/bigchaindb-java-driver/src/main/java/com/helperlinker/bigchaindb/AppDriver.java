@@ -8,6 +8,9 @@ import com.helperlinker.bigchaindb.services.*;
 public class AppDriver {
 	public static Scanner reader = new Scanner(System.in);
 
+	/**
+	 * An entry point to the console app
+	 */
 	public static void main(String[] args) {
 		AppDriver appDriver = new AppDriver();
 
