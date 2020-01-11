@@ -31,7 +31,7 @@ public class SecurityServices {
 		edDsaKpg.initialize(DEFAULT_KEYSIZE, random);
 		KeyPair keyPair = edDsaKpg.generateKeyPair();
 
-		System.out.println("(*) Keys Generated"); // TODO: Specify whose keys are generated
+		System.out.println("(*) Keys Generated");
 		System.out.println(Base58.encode(keyPair.getPublic().getEncoded()));
 		System.out.println(Base58.encode(keyPair.getPrivate().getEncoded()));
 

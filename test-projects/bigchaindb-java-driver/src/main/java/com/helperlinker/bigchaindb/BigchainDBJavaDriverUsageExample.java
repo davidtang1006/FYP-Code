@@ -91,7 +91,7 @@ public class BigchainDBJavaDriverUsageExample {
 		GenericCallback callback = new GenericCallback() {
 			@Override
 			public void transactionMalformed(Response response) {
-				System.out.println("malformed" + response.message());
+				System.out.println("malformed " + response.message());
 				onFailure();
 			}
 
@@ -103,7 +103,7 @@ public class BigchainDBJavaDriverUsageExample {
 
 			@Override
 			public void otherError(Response response) {
-				System.out.println("otherError" + response.message());
+				System.out.println("otherError " + response.message());
 				onFailure();
 			}
 		};
@@ -168,7 +168,7 @@ public class BigchainDBJavaDriverUsageExample {
 		Map<String, String> assetData = new TreeMap<String, String>();
 		assetData.put("id", txId);
 		try {
-			// Which transaction you want to fulfill?
+			// Which transaction do you want to fulfill?
 			FulFill fulfill = new FulFill();
 			fulfill.setOutputIndex(0);
 			fulfill.setTransactionId(txId);

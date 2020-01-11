@@ -8,6 +8,7 @@ import java.util.TreeMap;
 import com.bigchaindb.builders.BigchainDbConfigBuilder;
 import com.bigchaindb.builders.BigchainDbTransactionBuilder;
 import com.bigchaindb.constants.Operations;
+import com.bigchaindb.model.FulFill;
 import com.bigchaindb.model.GenericCallback;
 import com.bigchaindb.model.MetaData;
 import com.bigchaindb.model.Transaction;
@@ -22,9 +23,23 @@ import okhttp3.Response;
  * "https://github.com/bigchaindb/java-bigchaindb-driver#usage">https://github.com/bigchaindb/java-bigchaindb-driver#usage</a>.
  */
 public class BigchainDBServices {
-	public static void createHelperAccount(String idCardNum) {
-		setConfig();
+	/**
+	 * Configure connection URL and credentials
+	 */
+	public static void setConfig() {
+		BigchainDbConfigBuilder.baseUrl("http://localhost:9984/") // Or, use http://testnet.bigchaindb.com
+				.addToken("app_id", "").addToken("app_key", "").setup();
+		// The token is for authorization, but it is likely that this is not used. It
+		// can be accessed by BigChainDBGlobals.getAuthorizationTokens(), but the
+		// function is not called.
+	}
 
+	/**
+	 * Create a record for a new helper in BigchainDB
+	 * 
+	 * @return Transaction ID from BigchainDB
+	 */
+	public static String createHelperAccount(String idCardNum) {
 		// Create new asset. TreeMap stores a red–black tree.
 		@SuppressWarnings("serial")
 		Map<String, String> assetData = new TreeMap<String, String>() {
@@ -44,24 +59,44 @@ public class BigchainDBServices {
 
 		// Execute CREATE transaction
 		try {
-			doCreate(assetData, metaData, Helper.getKeyPair(idCardNum));
+			String txId = doCreate(assetData, metaData, Helper.getKeyPair(idCardNum));
 
 			// Let the transaction commit in block
-			Thread.sleep(5000);
+			Thread.sleep(1000);
+
+			return txId;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		return null;
 	}
 
 	/**
-	 * Configure connection URL and credentials
+	 * Update helper information in BigchainDB
+	 * 
+	 * @return Transaction ID from BigchainDB
 	 */
-	private static void setConfig() {
-		BigchainDbConfigBuilder.baseUrl("http://localhost:9984/") // Or, use http://testnet.bigchaindb.com
-				.addToken("app_id", "").addToken("app_key", "").setup();
-		// The token is for authorization, but it is likely that this is not used. It
-		// can be accessed by BigChainDBGlobals.getAuthorizationTokens(), but the
-		// function is not called.
+	public static String updateHelperInfo(String idCardNum, String selfIntro) {
+		// Create transfer metadata
+		MetaData transferMetadata = new MetaData();
+		transferMetadata.setMetaData("selfIntro", selfIntro);
+		System.out.println("(*) Transfer Metadata Prepared");
+
+		// Execute TRANSFER transaction on the CREATED asset
+		String firstTxId = Helper.getInfo(idCardNum).firstTxId;
+		String latestTxId = Helper.getInfo(idCardNum).latestTxId;
+		KeyPair keyPair = Helper.getKeyPair(idCardNum);
+		try {
+			latestTxId = doTransfer(firstTxId, latestTxId, transferMetadata, keyPair);
+
+			// Let the transaction commit in block
+			Thread.sleep(1000);
+
+			return latestTxId;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	/**
@@ -90,12 +125,46 @@ public class BigchainDBServices {
 		return null;
 	}
 
+	/**
+	 * Perform TRANSFER operations on CREATED assets
+	 * 
+	 * @param firstTxId  ID of the first transaction
+	 * @param latestTxId ID of the latest transaction
+	 * @param metaData   Data to append for this transaction
+	 * @param keys       Keys to sign and verify transactions
+	 * @return Transaction ID from BigchainDB
+	 */
+	private static String doTransfer(String firstTxId, String latestTxId, MetaData metaData, KeyPair keys)
+			throws Exception {
+		try {
+			// Specify the previous output
+			FulFill fulfill = new FulFill();
+			fulfill.setOutputIndex(0);
+			fulfill.setTransactionId(latestTxId);
+
+			// Build and send TRANSFER transaction. Note that the transaction ID of the
+			// CREATE transaction is passed to addAssets.
+			Transaction transaction = BigchainDbTransactionBuilder.init()
+					.addInput(null, fulfill, (EdDSAPublicKey) keys.getPublic())
+					.addOutput("1", (EdDSAPublicKey) keys.getPublic()).addAssets(firstTxId, String.class)
+					.addMetaData(metaData).operation(Operations.TRANSFER)
+					.buildAndSign((EdDSAPublicKey) keys.getPublic(), (EdDSAPrivateKey) keys.getPrivate())
+					.sendTransaction(handleServerResponse());
+
+			System.out.println("(*) TRANSFER Transaction sent - " + transaction.getId());
+			return transaction.getId();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
 	private static GenericCallback handleServerResponse() {
 		// Define callback methods to verify response from BigchainDBServer
 		GenericCallback callback = new GenericCallback() {
 			@Override
 			public void transactionMalformed(Response response) {
-				System.out.println("malformed" + response.message());
+				System.out.println("malformed " + response.message());
 				onFailure();
 			}
 
@@ -107,7 +176,7 @@ public class BigchainDBServices {
 
 			@Override
 			public void otherError(Response response) {
-				System.out.println("otherError" + response.message());
+				System.out.println("otherError " + response.message());
 				onFailure();
 			}
 		};

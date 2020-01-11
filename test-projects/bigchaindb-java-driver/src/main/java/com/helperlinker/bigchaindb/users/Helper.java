@@ -12,58 +12,97 @@ import com.helperlinker.bigchaindb.services.SecurityServices;
  */
 public class Helper {
 	/**
-	 * ID card number, {hashed password, salt, key pair}
+	 * idCardNum, Credentials, Info
 	 */
 	private static Map<String, Object[]> map = new HashMap<String, Object[]>();
 
-	private String selfIntro; // TODO: selfIntro is not used
+	public class Credentials extends UserCredentials {
+		Credentials(String hashedPwd, String salt, KeyPair keyPair) {
+			super(hashedPwd, salt, keyPair);
+		}
+	}
 
-//	TODO
-//	String fullName
-//	String nickName
-//	gender
-//	dateOfBirth
-//	nationality
-//	languages
-//	portraitPhoto
-//	phoneNum
-//	email
-//	skillSet
-//	availability
-//	selfIntro
-//	certificate
+	public class Info {
+		public String firstTxId = "";
+		public String latestTxId = "";
+		public String selfIntro = "";
+
+//		TODO
+//		String fullName
+//		String nickName
+//		gender
+//		dateOfBirth
+//		nationality
+//		languages
+//		portraitPhoto
+//		phoneNum
+//		email
+//		skillSet
+//		availability
+//		selfIntro
+//		certificate
+	}
 
 	public Helper(String idCardNum, String hashedPwd, String salt) {
 		// Generate a key pair from password and salt
 		KeyPair keyPair = SecurityServices.generateKeyPairFromPwdAndSalt("aaa", salt);
 
-		Object[] list = new Object[] { hashedPwd, salt, keyPair };
+		Credentials credentials = new Credentials(hashedPwd, salt, keyPair);
+		Info helperInfo = new Info();
+		Object[] list = new Object[] { credentials, helperInfo };
 		map.put(idCardNum, list);
 
 		// Execute BigchainDB CREATE transaction
-		BigchainDBServices.createHelperAccount(idCardNum);
+		String txId = BigchainDBServices.createHelperAccount(idCardNum);
+		if (txId != null) {
+			helperInfo.firstTxId = txId;
+			helperInfo.latestTxId = txId;
+		}
 	}
 
 	/**
-	 * @return An array of hashed password and salt in order
+	 * Execute BigchainDB TRANSFER transaction
 	 */
-	public static Object[] getHashedPwdAndSalt(String idCardNum) {
-		Object[] list = map.get(idCardNum);
+	public static void updateInfo(String idCardNum, String selfIntro) {
+		Info helperInfo = getInfo(idCardNum);
+		String txId = BigchainDBServices.updateHelperInfo(idCardNum, selfIntro);
+		if (txId != null) {
+			helperInfo.latestTxId = txId;
+		}
+	}
+
+	/*
+	 * Getters
+	 */
+
+	public static String[] getHashedPwdAndSalt(String idCardNum) {
+		String[] list = { getHashedPwd(idCardNum), getSalt(idCardNum) };
 		return list;
 	}
 
 	public static String getHashedPwd(String idCardNum) {
 		Object[] list = map.get(idCardNum);
-		return (String) list[0];
+		if (list != null) {
+			return ((Credentials) list[0]).hashedPwd;
+		}
+		return null;
 	}
 
 	public static String getSalt(String idCardNum) {
 		Object[] list = map.get(idCardNum);
-		return (String) list[1];
+		if (list != null) {
+			return ((Credentials) list[0]).salt;
+		}
+		return null;
 	}
 
 	public static KeyPair getKeyPair(String idCardNum) {
 		Object[] list = map.get(idCardNum);
-		return (KeyPair) list[2];
+		return ((Credentials) list[0]).keyPair;
+	}
+
+	public static Info getInfo(String idCardNum) {
+		Object[] list = map.get(idCardNum);
+		return (Info) list[1];
 	}
 }
