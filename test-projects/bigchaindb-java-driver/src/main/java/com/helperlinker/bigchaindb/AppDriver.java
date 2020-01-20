@@ -1,11 +1,15 @@
 package com.helperlinker.bigchaindb;
 
-import java.util.Scanner;
-
 import com.helperlinker.bigchaindb.users.Employer;
 import com.helperlinker.bigchaindb.users.Helper;
 import com.helperlinker.bigchaindb.services.BigchainDBServices;
+import com.helperlinker.bigchaindb.services.MongoDBServices;
 import com.helperlinker.bigchaindb.services.SecurityServices;
+
+import java.util.ArrayList;
+import java.util.Scanner;
+
+import org.bson.Document;
 
 public class AppDriver {
 	private static Scanner reader = new Scanner(System.in);
@@ -14,14 +18,21 @@ public class AppDriver {
 	 * An entry point to the console app
 	 */
 	public static void main(String[] args) {
-		BigchainDBServices.setConfig();
-		AppDriver appDriver = new AppDriver();
+		try {
+			BigchainDBServices.setConfig();
+			MongoDBServices.setConfig();
 
-		appDriver.createDummyAccounts();
-		appDriver.selectOptions();
+			createDummyAccounts();
+			selectOptions();
+		} finally {
+			System.out.println();
+			reader.close();
+			MongoDBServices.cleanUp();
+			System.out.print("The program takes some time to terminate.");
+		}
 	}
 
-	private void createDummyAccounts() {
+	private static void createDummyAccounts() {
 		// ID card number, hashed password, salt
 		new Helper("A1234", "b8db2e4680c00f5075682be1179797bf29f15f7a2b87a6818eec3cf9e47955ff",
 				"a0eb205f1dfcc32fbb21c4febb8a4669"); // Password: aaa
@@ -40,12 +51,13 @@ public class AppDriver {
 				"32b3d04d49e8e63f5a3fabce813dd954"); // Password: aaa
 	}
 
-	private void selectOptions() {
+	private static void selectOptions() {
 		while (true) {
 			System.out.println();
 			System.out.println("Please select an option.");
 			System.out.println("1. I am a helper.");
 			System.out.println("2. I am an employer.");
+			System.out.println("0. Exit.");
 
 			int option = reader.nextInt();
 			reader.nextLine();
@@ -123,7 +135,7 @@ public class AppDriver {
 					option = reader.nextInt();
 					reader.nextLine();
 					if (option == 1) {
-						// TODO
+						browseHelperList();
 					}
 
 					else if (option == 2) {
@@ -140,13 +152,25 @@ public class AppDriver {
 				break;
 			}
 		}
-		reader.close();
+	}
+
+	/**
+	 * @param input User input
+	 * @return 1 if the input is a yes, 2 if the input is a no, 0 otherwise
+	 */
+	private static int interpretYesAndNo(String input) {
+		if (input.equals("Y") || input.equals("y")) {
+			return 1;
+		} else if (input.equals("N") || input.equals("n")) {
+			return 2;
+		}
+		return 0;
 	}
 
 	/**
 	 * @return true if the login is successful
 	 */
-	private boolean helperLogin(String idCardNum, String pwd) {
+	private static boolean helperLogin(String idCardNum, String pwd) {
 		String[] list = Helper.getHashedPwdAndSalt(idCardNum);
 		if (list[0] == null && list[1] == null) {
 			return false;
@@ -157,7 +181,7 @@ public class AppDriver {
 	/**
 	 * @return true if the login is successful
 	 */
-	private boolean employerLogin(String idCardNum, String pwd) {
+	private static boolean employerLogin(String idCardNum, String pwd) {
 		String[] list = Employer.getHashedPwdAndSalt(idCardNum);
 		if (list == null) {
 			return false;
@@ -165,7 +189,7 @@ public class AppDriver {
 		return list[0].equals(SecurityServices.calculateHash(pwd, list[1], "SHA-256"));
 	}
 
-	private void editHelperProfile(String idCardNum) {
+	private static void editHelperProfile(String idCardNum) {
 		System.out.println();
 		System.out.print("Self-introduction: ");
 
@@ -183,16 +207,23 @@ public class AppDriver {
 		}
 	}
 
-	/**
-	 * @param input User input
-	 * @return 1 if the input is a yes, 2 if the input is a no, 0 otherwise
-	 */
-	private int interpretYesAndNo(String input) {
-		if (input.equals("Y") || input.equals("y")) {
-			return 1;
-		} else if (input.equals("N") || input.equals("n")) {
-			return 2;
-		}
-		return 0;
+	private static void browseHelperList() {
+		do {
+			System.out.println();
+			System.out.print("Keywords: (Enter nothing to exit. The result will be sorted by relevance.) ");
+			String keywords = reader.nextLine();
+
+			if (keywords.equals("")) {
+				// Exit if the input is empty
+				break;
+			}
+
+			ArrayList<Document> results = MongoDBServices.searchHelperLatestInfo(keywords);
+			if (results.isEmpty()) {
+				System.out.println("There are no results found. Please try other keywords.");
+			} else {
+				results.forEach(MongoDBServices.printBlock);
+			}
+		} while (true);
 	}
 }
