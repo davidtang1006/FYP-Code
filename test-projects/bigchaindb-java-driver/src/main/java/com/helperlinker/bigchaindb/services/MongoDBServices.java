@@ -17,6 +17,9 @@ import org.bson.Document;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Sorts.*;
 
+/**
+ * This class provides some methods for querying MongoDB
+ */
 public class MongoDBServices {
 	private static MongoClient mongoClient;
 	private static MongoDatabase database;
