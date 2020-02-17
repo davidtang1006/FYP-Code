@@ -39,15 +39,15 @@ public class BigchainDBServices {
 	 * 
 	 * @return Transaction ID from BigchainDB
 	 */
-	public static String createHelperAccount(String idCardNum) {
+	public static String createHelperAccount(Helper helper) {
 		// Create new asset. TreeMap stores a red–black tree.
 		@SuppressWarnings("serial")
 		Map<String, String> assetData = new TreeMap<String, String>() {
 			{
 				put("userType", "HELPER");
-				put("idCardNum", idCardNum);
-				put("hashedPwd", Helper.getHashedPwd(idCardNum));
-				put("salt", Helper.getSalt(idCardNum));
+				put("idCardNum", helper.credentials.getIdCardNum());
+				put("hashedPwd", helper.credentials.getHashedPwd());
+				put("salt", helper.credentials.getSalt());
 			}
 		};
 		System.out.println("(*) Assets Prepared");
@@ -59,7 +59,7 @@ public class BigchainDBServices {
 
 		// Execute CREATE transaction
 		try {
-			String txId = doCreate(assetData, metaData, Helper.getKeyPair(idCardNum));
+			String txId = doCreate(assetData, metaData, helper.credentials.getKeyPair());
 
 			// Let the transaction commit in block
 			Thread.sleep(1000);
@@ -76,16 +76,16 @@ public class BigchainDBServices {
 	 * 
 	 * @return Transaction ID from BigchainDB
 	 */
-	public static String updateHelperInfo(String idCardNum, String selfIntro) {
+	public static String updateHelperInfo(Helper helper, String selfIntro) {
 		// Create transfer metadata
 		MetaData transferMetadata = new MetaData();
 		transferMetadata.setMetaData("selfIntro", selfIntro);
 		System.out.println("(*) Transfer Metadata Prepared");
 
 		// Execute TRANSFER transaction on the CREATED asset
-		String firstTxId = Helper.getInfo(idCardNum).firstTxId;
-		String latestTxId = Helper.getInfo(idCardNum).latestTxId;
-		KeyPair keyPair = Helper.getKeyPair(idCardNum);
+		String firstTxId = helper.info.getFirstTxId();
+		String latestTxId = helper.info.getLatestTxId();
+		KeyPair keyPair = helper.credentials.getKeyPair();
 		try {
 			latestTxId = doTransfer(firstTxId, latestTxId, transferMetadata, keyPair);
 

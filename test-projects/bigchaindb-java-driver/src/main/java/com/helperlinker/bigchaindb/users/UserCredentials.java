@@ -3,10 +3,11 @@ package com.helperlinker.bigchaindb.users;
 import java.security.KeyPair;
 
 class UserCredentials {
-	String hashedPwd, salt;
+	String idCardNum, hashedPwd, salt;
 	KeyPair keyPair;
 
-	UserCredentials(String hashedPwd, String salt, KeyPair keyPair) {
+	UserCredentials(String idCardNum, String hashedPwd, String salt, KeyPair keyPair) {
+		this.idCardNum = idCardNum;
 		this.hashedPwd = hashedPwd;
 		this.salt = salt;
 		this.keyPair = keyPair;
