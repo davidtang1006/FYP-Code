@@ -9,13 +9,13 @@ import java.util.HashMap;
 public class Employer {
 	private static Map<String, String[]> map = new HashMap<String, String[]>();
 
-//	TODO
-//	fullName
-//
-//	helperEmploymentPeriod
-//	comments
-//	ratings
-//	referenceLetter
+	// TODO
+	// fullName
+	//
+	// helperEmploymentPeriod
+	// comments
+	// ratings
+	// referenceLetter
 
 	public Employer(String idCardNum, String hashedPwd, String salt) {
 		// TODO: Generate a key pair from password and salt

@@ -1,11 +1,12 @@
 package com.helperlinker.bigchaindb.users;
 
 import java.security.KeyPair;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.helperlinker.bigchaindb.services.BigchainDBServices;
+import com.helperlinker.bigchaindb.services.MongoDBServices;
 import com.helperlinker.bigchaindb.services.SecurityServices;
+
+import org.bson.Document;
 
 /**
  * A model for helpers
@@ -14,60 +15,121 @@ public class Helper {
 	/**
 	 * idCardNum, Credentials, Info
 	 */
-	private static Map<String, Object[]> map = new HashMap<String, Object[]>();
+
+	public Credentials credentials;
+	public Info info;
 
 	public class Credentials extends UserCredentials {
-		Credentials(String hashedPwd, String salt, KeyPair keyPair) {
-			super(hashedPwd, salt, keyPair);
+		private Credentials(String idCardNum, String hashedPwd, String salt, KeyPair keyPair) {
+			super(idCardNum, hashedPwd, salt, keyPair);
+		}
+
+		/*
+		 * Getters
+		 */
+
+		public String getIdCardNum() {
+			return idCardNum;
+		}
+
+		public String getHashedPwd() {
+			return hashedPwd;
+		}
+
+		public String getSalt() {
+			return salt;
+		}
+
+		public KeyPair getKeyPair() {
+			return keyPair;
 		}
 	}
 
 	public class Info {
-		public String firstTxId = "";
-		public String latestTxId = "";
-		public String selfIntro = "";
+		private String firstTxId = "";
+		private String latestTxId = "";
+		private String selfIntro = "";
 
-//		TODO
-//		String fullName
-//		String nickName
-//		gender
-//		dateOfBirth
-//		nationality
-//		languages
-//		portraitPhoto
-//		phoneNum
-//		email
-//		skillSet
-//		availability
-//		selfIntro
-//		certificate
+		// TODO
+		// String fullName
+		// String nickName
+		// gender
+		// dateOfBirth
+		// nationality
+		// languages
+		// portraitPhoto
+		// phoneNum
+		// email
+		// skillSet
+		// availability
+		// selfIntro
+		// certificate
+
+		/*
+		 * Getters
+		 */
+
+		public String getFirstTxId() {
+			return firstTxId;
+		}
+
+		public String getLatestTxId() {
+			return latestTxId;
+		}
+
+		public String getSelfIntro() {
+			return selfIntro;
+		}
 	}
 
-	public Helper(String idCardNum, String hashedPwd, String salt) {
-		// Generate a key pair from password and salt
-		KeyPair keyPair = SecurityServices.generateKeyPairFromPwdAndSalt("aaa", salt);
+	/**
+	 * This constructor is used when creating a new helper at the beginning.
+	 */
+	public Helper(String idCardNum, String pwd, String salt) {
+		String hashedPwd = SecurityServices.calculateHash(pwd, salt, "SHA-256");
 
-		Credentials credentials = new Credentials(hashedPwd, salt, keyPair);
-		Info helperInfo = new Info();
-		Object[] list = new Object[] { credentials, helperInfo };
-		map.put(idCardNum, list);
+		// Generate a key pair from pwd and salt
+		KeyPair keyPair = SecurityServices.generateKeyPairFromPwdAndSalt(pwd, salt);
+
+		credentials = new Credentials(idCardNum, hashedPwd, salt, keyPair);
+		info = new Info();
 
 		// Execute BigchainDB CREATE transaction
-		String txId = BigchainDBServices.createHelperAccount(idCardNum);
+		String txId = BigchainDBServices.createHelperAccount(this);
 		if (txId != null) {
-			helperInfo.firstTxId = txId;
-			helperInfo.latestTxId = txId;
+			info.firstTxId = txId;
+			info.latestTxId = txId;
 		}
+	}
+
+	/**
+	 * This constructor is used after a helper has logged in. The credentials are
+	 * rediscovered. The constructor also retrieves helper's latest information from
+	 * the database.
+	 */
+	public Helper(String idCardNum, String pwd) {
+		Document assetDoc = MongoDBServices.getHelperAssetDoc(idCardNum);
+		Document latestInfo = MongoDBServices.getHelperLatestInfo(idCardNum);
+
+		String salt = ((Document) assetDoc.get("data")).getString("salt");
+		String hashedPwd = SecurityServices.calculateHash(pwd, salt, "SHA-256");
+		KeyPair keyPair = SecurityServices.generateKeyPairFromPwdAndSalt(pwd, salt);
+
+		credentials = new Credentials(idCardNum, hashedPwd, salt, keyPair);
+
+		info = new Info();
+		info.firstTxId = latestInfo.getString("firstTxId");
+		info.latestTxId = latestInfo.getString("latestTxId");
+		info.selfIntro = latestInfo.getString("selfIntro");
 	}
 
 	/**
 	 * Execute BigchainDB TRANSFER transaction
 	 */
-	public static void updateInfo(String idCardNum, String selfIntro) {
-		Info helperInfo = getInfo(idCardNum);
-		String txId = BigchainDBServices.updateHelperInfo(idCardNum, selfIntro);
+	public void updateInfo(String selfIntro) {
+		String txId = BigchainDBServices.updateHelperInfo(this, selfIntro);
 		if (txId != null) {
-			helperInfo.latestTxId = txId;
+			info.latestTxId = txId;
 		}
 	}
 
@@ -76,33 +138,13 @@ public class Helper {
 	 */
 
 	public static String[] getHashedPwdAndSalt(String idCardNum) {
-		String[] list = { getHashedPwd(idCardNum), getSalt(idCardNum) };
-		return list;
-	}
+		Document result = MongoDBServices.getHelperAssetDoc(idCardNum);
 
-	public static String getHashedPwd(String idCardNum) {
-		Object[] list = map.get(idCardNum);
-		if (list != null) {
-			return ((Credentials) list[0]).hashedPwd;
+		if (result != null) {
+			String[] list = { ((Document) result.get("data")).getString("hashedPwd"),
+					((Document) result.get("data")).getString("salt") };
+			return list;
 		}
 		return null;
-	}
-
-	public static String getSalt(String idCardNum) {
-		Object[] list = map.get(idCardNum);
-		if (list != null) {
-			return ((Credentials) list[0]).salt;
-		}
-		return null;
-	}
-
-	public static KeyPair getKeyPair(String idCardNum) {
-		Object[] list = map.get(idCardNum);
-		return ((Credentials) list[0]).keyPair;
-	}
-
-	public static Info getInfo(String idCardNum) {
-		Object[] list = map.get(idCardNum);
-		return (Info) list[1];
 	}
 }
