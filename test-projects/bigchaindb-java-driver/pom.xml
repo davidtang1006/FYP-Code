@@ -4,11 +4,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.helperlinker</groupId>
-	<artifactId>bigchaindb</artifactId>
+	<artifactId>bigchaindb-java-driver</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>bigchaindb</name>
+	<name>bigchaindb-java-driver</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
@@ -38,4 +38,17 @@
 			<version>1.7.30</version>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>11</source>
+					<target>11</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
